@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Blessing Funeral Scheme"
+description = "A secure funeral scheme operations workspace for managing members, contributions, claims, branches, and staff access."
+version = "1.0.0"
+id = "artifacts/blessing-funeral-scheme-app"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21565
+
+[services.development]
+run = "pnpm --filter @workspace/blessing-funeral-scheme-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/blessing-funeral-scheme-app", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/blessing-funeral-scheme-app/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21565"
+BASE_PATH = "/"

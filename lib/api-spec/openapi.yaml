@@ -1,15 +1,30 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Blessing Funeral Scheme operations API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: Auth
+    description: Browser and mobile authentication endpoints
+  - name: dashboard
+    description: Operations overview
+  - name: members
+    description: Member and beneficiary records
+  - name: contributions
+    description: Member contribution tracking
+  - name: claims
+    description: Funeral assistance claims
+  - name: branches
+    description: Branch coverage
+  - name: staff
+    description: Staff and access management
+  - name: activity
+    description: Recent workspace activity
 paths:
   /healthz:
     get:
@@ -24,7 +39,484 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/user:
+    get:
+      tags: [Auth]
+      operationId: getCurrentAuthUser
+      summary: Get the currently authenticated user
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+      responses:
+        "200":
+          description: Auth status resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserEnvelope"
+  /login:
+    get:
+      tags: [Auth]
+      operationId: beginBrowserLogin
+      summary: Start the browser OIDC login flow
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "302":
+          description: Redirect to the OIDC authorization endpoint
+  /callback:
+    get:
+      tags: [Auth]
+      operationId: handleBrowserLoginCallback
+      summary: Complete the browser OIDC login flow
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema: { type: string }
+        - name: state
+          in: query
+          required: false
+          schema: { type: string }
+        - name: iss
+          in: query
+          required: false
+          schema: { type: string, format: uri }
+      responses:
+        "302":
+          description: Redirect after login
+  /logout:
+    get:
+      tags: [Auth]
+      operationId: logoutBrowserSession
+      summary: Clear the browser session
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+        - name: returnTo
+          in: query
+          required: false
+          schema: { type: string, default: / }
+      responses:
+        "302":
+          description: Redirect after logout
+  /mobile-auth/token-exchange:
+    post:
+      tags: [Auth]
+      operationId: exchangeMobileAuthorizationCode
+      summary: Exchange a mobile OIDC code for a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MobileTokenExchangeRequest"
+      responses:
+        "200":
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MobileTokenExchangeSuccess"
+        "400":
+          $ref: "#/components/responses/ErrorEnvelopeResponse"
+        "401":
+          $ref: "#/components/responses/ErrorEnvelopeResponse"
+        "500":
+          $ref: "#/components/responses/ErrorEnvelopeResponse"
+  /mobile-auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logoutMobileSession
+      summary: Delete a mobile session token
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+      responses:
+        "200":
+          description: Logout processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutSuccess"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get the operations summary
+      responses:
+        "200":
+          description: Current member, contribution, claim, and branch summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /activity:
+    get:
+      operationId: listActivity
+      tags: [activity]
+      summary: List recent activity
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+  /branches:
+    get:
+      operationId: listBranches
+      tags: [branches]
+      summary: List scheme branches
+      responses:
+        "200":
+          description: Branches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Branch"
+  /staff:
+    get:
+      operationId: listStaff
+      tags: [staff]
+      summary: List staff members
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/StaffStatus"
+        - name: role
+          in: query
+          schema:
+            $ref: "#/components/schemas/StaffRole"
+      responses:
+        "200":
+          description: Staff members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Staff"
+    post:
+      operationId: createStaff
+      tags: [staff]
+      summary: Add a staff member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffInput"
+      responses:
+        "201":
+          description: Staff member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Staff"
+  /staff/{staffId}:
+    patch:
+      operationId: updateStaff
+      tags: [staff]
+      summary: Update a staff member
+      parameters:
+        - $ref: "#/components/parameters/StaffId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffUpdate"
+      responses:
+        "200":
+          description: Updated staff member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Staff"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /members:
+    get:
+      operationId: listMembers
+      tags: [members]
+      summary: List members
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/MemberStatus"
+        - name: branchId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Member"
+    post:
+      operationId: createMember
+      tags: [members]
+      summary: Enrol a member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberInput"
+      responses:
+        "201":
+          description: Enrolled member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+  /members/{memberId}:
+    get:
+      operationId: getMember
+      tags: [members]
+      summary: Get a member profile
+      parameters:
+        - $ref: "#/components/parameters/MemberId"
+      responses:
+        "200":
+          description: Member profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberProfile"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateMember
+      tags: [members]
+      summary: Update a member profile
+      parameters:
+        - $ref: "#/components/parameters/MemberId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberUpdate"
+      responses:
+        "200":
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /members/{memberId}/beneficiaries:
+    post:
+      operationId: createBeneficiary
+      tags: [members]
+      summary: Add a beneficiary to a member
+      parameters:
+        - $ref: "#/components/parameters/MemberId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BeneficiaryInput"
+      responses:
+        "201":
+          description: Beneficiary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Beneficiary"
+  /beneficiaries/{beneficiaryId}:
+    patch:
+      operationId: updateBeneficiary
+      tags: [members]
+      summary: Update a beneficiary
+      parameters:
+        - $ref: "#/components/parameters/BeneficiaryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BeneficiaryUpdate"
+      responses:
+        "200":
+          description: Updated beneficiary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Beneficiary"
+    delete:
+      operationId: deleteBeneficiary
+      tags: [members]
+      summary: Remove a beneficiary
+      parameters:
+        - $ref: "#/components/parameters/BeneficiaryId"
+      responses:
+        "204":
+          description: Beneficiary removed
+  /contributions:
+    get:
+      operationId: listContributions
+      tags: [contributions]
+      summary: List member contributions
+      parameters:
+        - name: memberId
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/ContributionStatus"
+      responses:
+        "200":
+          description: Contributions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Contribution"
+    post:
+      operationId: recordContribution
+      tags: [contributions]
+      summary: Record a contribution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContributionInput"
+      responses:
+        "201":
+          description: Recorded contribution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contribution"
+  /claims:
+    get:
+      operationId: listClaims
+      tags: [claims]
+      summary: List funeral assistance claims
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/ClaimStatus"
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Claims
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Claim"
+    post:
+      operationId: createClaim
+      tags: [claims]
+      summary: Submit a funeral assistance claim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimInput"
+      responses:
+        "201":
+          description: Submitted claim
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
+  /claims/{claimId}:
+    patch:
+      operationId: updateClaim
+      tags: [claims]
+      summary: Update claim status and review details
+      parameters:
+        - $ref: "#/components/parameters/ClaimId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimUpdate"
+      responses:
+        "200":
+          description: Updated claim
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Claim"
 components:
+  parameters:
+    AuthorizationSessionHeader:
+      name: Authorization
+      in: header
+      required: false
+      schema: { type: string }
+    SessionCookie:
+      name: sid
+      in: cookie
+      required: false
+      schema: { type: string }
+    MemberId:
+      name: memberId
+      in: path
+      required: true
+      schema: { type: string }
+    BeneficiaryId:
+      name: beneficiaryId
+      in: path
+      required: true
+      schema: { type: string }
+    ClaimId:
+      name: claimId
+      in: path
+      required: true
+      schema: { type: string }
+    StaffId:
+      name: staffId
+      in: path
+      required: true
+      schema: { type: string }
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ErrorEnvelopeResponse:
+      description: Authentication error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +525,284 @@ components:
           type: string
       required:
         - status
+    AuthUser:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: ["string", "null"], format: email }
+        firstName: { type: ["string", "null"] }
+        lastName: { type: ["string", "null"] }
+        profileImageUrl: { type: ["string", "null"] }
+      required: [id, email, firstName, lastName, profileImageUrl]
+    AuthUserEnvelope:
+      type: object
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+      required: [user]
+    MobileTokenExchangeRequest:
+      type: object
+      properties:
+        code: { type: string, minLength: 1 }
+        code_verifier: { type: string, minLength: 1 }
+        redirect_uri: { type: string, minLength: 1, format: uri }
+        state: { type: string, minLength: 1 }
+        nonce: { type: string, minLength: 1 }
+      required: [code, code_verifier, redirect_uri, state]
+    MobileTokenExchangeSuccess:
+      type: object
+      properties:
+        token: { type: string }
+      required: [token]
+    LogoutSuccess:
+      type: object
+      properties:
+        success: { type: boolean, const: true }
+      required: [success]
+    ErrorEnvelope:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+    MemberStatus:
+      type: string
+      enum: [active, pending, lapsed, deceased]
+    ContributionStatus:
+      type: string
+      enum: [paid, due, overdue]
+    ClaimStatus:
+      type: string
+      enum: [submitted, reviewing, approved, paid, declined]
+    Branch:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        location: { type: string }
+        memberCount: { type: integer }
+        collectionRate: { type: integer }
+      required: [id, name, location, memberCount, collectionRate]
+    StaffRole:
+      type: string
+      enum: [administrator, manager, coordinator, support]
+    StaffStatus:
+      type: string
+      enum: [active, invited, suspended]
+    Staff:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        role:
+          $ref: "#/components/schemas/StaffRole"
+        branchId: { type: ["string", "null"] }
+        branchName: { type: string }
+        status:
+          $ref: "#/components/schemas/StaffStatus"
+        joinedAt: { type: string, format: date }
+        lastActiveAt: { type: ["string", "null"], format: date }
+      required: [id, name, email, phone, role, branchId, branchName, status, joinedAt, lastActiveAt]
+    StaffInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        email: { type: string, format: email }
+        phone: { type: string, minLength: 5 }
+        role:
+          $ref: "#/components/schemas/StaffRole"
+        branchId: { type: ["string", "null"] }
+      required: [name, email, phone, role, branchId]
+    StaffUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        email: { type: string, format: email }
+        phone: { type: string, minLength: 5 }
+        role:
+          $ref: "#/components/schemas/StaffRole"
+        branchId: { type: ["string", "null"] }
+        status:
+          $ref: "#/components/schemas/StaffStatus"
+    Member:
+      type: object
+      properties:
+        id: { type: string }
+        memberNumber: { type: string }
+        name: { type: string }
+        phone: { type: string }
+        email: { type: string }
+        branchId: { type: string }
+        branchName: { type: string }
+        planName: { type: string }
+        monthlyContribution: { type: number }
+        dependantsCount: { type: integer }
+        status:
+          $ref: "#/components/schemas/MemberStatus"
+        joinedAt: { type: string, format: date }
+        nextContributionDate: { type: string, format: date }
+      required: [id, memberNumber, name, phone, email, branchId, branchName, planName, monthlyContribution, dependantsCount, status, joinedAt, nextContributionDate]
+    MemberProfile:
+      allOf:
+        - $ref: "#/components/schemas/Member"
+        - type: object
+          properties:
+            address: { type: string }
+            idNumber: { type: string }
+            beneficiaries:
+              type: array
+              items:
+                $ref: "#/components/schemas/Beneficiary"
+            recentContributions:
+              type: array
+              items:
+                $ref: "#/components/schemas/Contribution"
+            recentClaims:
+              type: array
+              items:
+                $ref: "#/components/schemas/Claim"
+          required: [address, idNumber, beneficiaries, recentContributions, recentClaims]
+    MemberInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        phone: { type: string, minLength: 5 }
+        email: { type: string, format: email }
+        address: { type: string }
+        idNumber: { type: string }
+        branchId: { type: string }
+        planName: { type: string }
+      required: [name, phone, email, address, idNumber, branchId, planName]
+    MemberUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        phone: { type: string, minLength: 5 }
+        email: { type: string, format: email }
+        address: { type: string }
+        idNumber: { type: string }
+        branchId: { type: string }
+        planName: { type: string }
+        status:
+          $ref: "#/components/schemas/MemberStatus"
+    Beneficiary:
+      type: object
+      properties:
+        id: { type: string }
+        memberId: { type: string }
+        name: { type: string }
+        relationship: { type: string }
+        phone: { type: string }
+        allocation: { type: integer, minimum: 1, maximum: 100 }
+        primary: { type: boolean }
+      required: [id, memberId, name, relationship, phone, allocation, primary]
+    BeneficiaryInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        relationship: { type: string, minLength: 2 }
+        phone: { type: string, minLength: 5 }
+        allocation: { type: integer, minimum: 1, maximum: 100 }
+        primary: { type: boolean }
+      required: [name, relationship, phone, allocation, primary]
+    BeneficiaryUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        relationship: { type: string, minLength: 2 }
+        phone: { type: string, minLength: 5 }
+        allocation: { type: integer, minimum: 1, maximum: 100 }
+        primary: { type: boolean }
+    Contribution:
+      type: object
+      properties:
+        id: { type: string }
+        memberId: { type: string }
+        memberName: { type: string }
+        amount: { type: number }
+        dueDate: { type: string, format: date }
+        paidDate: { type: [string, "null"], format: date }
+        status:
+          $ref: "#/components/schemas/ContributionStatus"
+        method: { type: string }
+      required: [id, memberId, memberName, amount, dueDate, paidDate, status, method]
+    ContributionInput:
+      type: object
+      properties:
+        memberId: { type: string }
+        amount: { type: number, minimum: 0.01 }
+        dueDate: { type: string, format: date }
+        paidDate: { type: [string, "null"], format: date }
+        method: { type: string }
+      required: [memberId, amount, dueDate, method]
+    Claim:
+      type: object
+      properties:
+        id: { type: string }
+        claimNumber: { type: string }
+        memberId: { type: string }
+        memberName: { type: string }
+        deceasedName: { type: string }
+        relationship: { type: string }
+        amount: { type: number }
+        submittedAt: { type: string, format: date }
+        status:
+          $ref: "#/components/schemas/ClaimStatus"
+        notes: { type: string }
+      required: [id, claimNumber, memberId, memberName, deceasedName, relationship, amount, submittedAt, status, notes]
+    ClaimInput:
+      type: object
+      properties:
+        memberId: { type: string }
+        deceasedName: { type: string, minLength: 2 }
+        relationship: { type: string, minLength: 2 }
+        amount: { type: number, minimum: 0.01 }
+        notes: { type: string }
+      required: [memberId, deceasedName, relationship, amount, notes]
+    ClaimUpdate:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/ClaimStatus"
+        notes: { type: string }
+    DashboardSummary:
+      type: object
+      properties:
+        activeMembers: { type: integer }
+        pendingMembers: { type: integer }
+        contributionsThisMonth: { type: number }
+        overdueContributions: { type: number }
+        openClaims: { type: integer }
+        approvedClaims: { type: number }
+        branches:
+          type: array
+          items:
+            $ref: "#/components/schemas/Branch"
+        claimBreakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                $ref: "#/components/schemas/ClaimStatus"
+              count: { type: integer }
+            required: [status, count]
+      required: [activeMembers, pendingMembers, contributionsThisMonth, overdueContributions, openClaims, approvedClaims, branches, claimBreakdown]
+    Activity:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        detail: { type: string }
+        time: { type: string }
+        type: { type: string }
+      required: [id, title, detail, time, type]
 

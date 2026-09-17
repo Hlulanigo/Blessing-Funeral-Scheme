@@ -1,0 +1,2 @@
+- [Staff access scope](staff-access-scope.md) — directory records are separate from secure sign-in and invitation acceptance.
+- [Browser authentication](browser-auth.md) — use the hosted OIDC flow for both login and registration; keep staff assignment separate.
