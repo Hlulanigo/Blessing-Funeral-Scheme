@@ -1,4 +1,5 @@
 import { ArrowRight, CheckCircle2, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { BrandMark } from '@/components/brand-mark';
 
 export function AuthScreen({ onLogin }: { onLogin: () => void }) {
   return (
@@ -9,7 +10,7 @@ export function AuthScreen({ onLogin }: { onLogin: () => void }) {
       <section className="auth-layout">
         <div className="auth-story">
           <div className="auth-brand">
-            <div className="brand-mark">B</div>
+            <BrandMark />
             <span className="brand-word">Blessing</span>
           </div>
 

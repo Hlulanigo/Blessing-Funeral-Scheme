@@ -16,6 +16,7 @@ import StaffPage from '@/pages/staff';
 import SettingsPage from '@/pages/settings';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { BrandMark } from '@/components/brand-mark';
 
 const queryClient = new QueryClient();
 
@@ -71,7 +72,7 @@ function AuthLoadingScreen() {
   return (
     <main className="auth-page" aria-busy="true" aria-label="Loading your secure workspace">
       <div className="auth-loading-card">
-        <div className="brand-mark">B</div>
+        <BrandMark />
         <div>
           <div className="auth-loading-title">Preparing your workspace</div>
           <div className="auth-loading-copy">Checking your secure session…</div>

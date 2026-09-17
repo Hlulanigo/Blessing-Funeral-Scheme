@@ -2,6 +2,7 @@ import { Bell, BookOpen, Building2, ChevronDown, CircleDollarSign, FileText, Lay
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import type { AuthUser } from '@workspace/replit-auth-web';
+import { BrandMark } from '@/components/brand-mark';
 
 const navItems = [
   { href: '/', label: 'Operations', icon: LayoutDashboard },
@@ -22,7 +23,7 @@ export function AppShell({ children, user, logout }: { children: ReactNode; user
   const sidebar = (
     <aside className="sidebar" aria-label="Primary navigation">
       <div className="flex items-center gap-3 px-3 mb-10">
-        <div className="brand-mark">B</div><span className="brand-word">Blessing</span>
+         <BrandMark /><span className="brand-word">Blessing</span>
         {mobileOpen && <button data-testid="button-close-navigation" className="btn btn-ghost ml-auto p-1" onClick={() => setMobileOpen(false)}><X size={17} /></button>}
       </div>
       <div className="px-3 mb-3 eyebrow" style={{ color: 'hsl(var(--sidebar-foreground)/.45)' }}>Workspace</div>
@@ -54,7 +55,7 @@ export function AppShell({ children, user, logout }: { children: ReactNode; user
         <header className="topbar">
           <div className="flex items-center gap-3">
             <button data-testid="button-open-navigation" className="btn btn-ghost mobile-menu p-2" onClick={() => setMobileOpen(true)}><Menu size={19} /></button>
-            <div className="md:hidden brand-mark">B</div>
+             <div className="md:hidden"><BrandMark /></div>
             <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground"><BookOpen size={14} /> Blessing Funeral Scheme <span className="text-border">/</span> <span className="text-foreground font-semibold">{location === '/' ? 'Operations' : location.slice(1).split('/')[0]}</span></div>
           </div>
           <div className="flex items-center gap-4">

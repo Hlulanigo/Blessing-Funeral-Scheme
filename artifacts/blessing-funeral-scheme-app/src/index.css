@@ -79,29 +79,29 @@
   --elevate-1: rgba(0, 0, 0, 0.03);
   --elevate-2: rgba(0, 0, 0, 0.08);
 
-  --background: 44 33% 96%;
+  --background: 42 39% 94%;
 
-  --foreground: 221 31% 17%;
+  --foreground: 222 37% 19%;
 
-  --border: 40 24% 86%;
+  --border: 39 28% 84%;
 
-  --card: 42 33% 99%;
+  --card: 42 39% 99%;
 
-  --card-foreground: 221 31% 17%;
+  --card-foreground: 222 37% 19%;
 
-  --card-border: 40 24% 86%;
+  --card-border: 39 28% 84%;
 
-  --sidebar: 220 35% 17%;
+  --sidebar: 222 37% 19%;
 
   --sidebar-foreground: 42 34% 94%;
 
-  --sidebar-border: 220 24% 27%;
+  --sidebar-border: 222 25% 29%;
 
   --sidebar-primary: 38 53% 55%;
 
   --sidebar-primary-foreground: 220 35% 17%;
 
-  --sidebar-accent: 220 27% 24%;
+  --sidebar-accent: 222 27% 25%;
 
   --sidebar-accent-foreground: 42 34% 94%;
 
@@ -109,25 +109,25 @@
 
   --popover: 42 33% 99%;
 
-  --popover-foreground: 221 31% 17%;
+  --popover-foreground: 222 37% 19%;
 
   --popover-border: 40 24% 86%;
 
-  --primary: 221 31% 24%;
+  --primary: 222 37% 19%;
 
-  --primary-foreground: 42 34% 96%;
+  --primary-foreground: 42 39% 94%;
 
-  --secondary: 38 32% 90%;
+  --secondary: 39 36% 90%;
 
-  --secondary-foreground: 221 31% 24%;
+  --secondary-foreground: 222 37% 19%;
 
   --muted: 40 25% 91%;
 
   --muted-foreground: 221 12% 46%;
 
-  --accent: 38 53% 55%;
+  --accent: 39 48% 57%;
 
-  --accent-foreground: 221 31% 17%;
+  --accent-foreground: 222 37% 19%;
 
   --destructive: 4 58% 48%;
 
@@ -135,9 +135,9 @@
 
   --input: 40 24% 81%;
   --ring: 38 53% 55%;
-  --chart-1: 221 31% 24%;
-  --chart-2: 38 53% 55%;
-  --chart-3: 152 27% 43%;
+  --chart-1: 222 37% 19%;
+  --chart-2: 39 48% 57%;
+  --chart-3: 141 11% 49%;
   --chart-4: 4 58% 48%;
   --chart-5: 204 42% 52%;
 
@@ -452,7 +452,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .sidebar { background: hsl(var(--sidebar)); color: hsl(var(--sidebar-foreground)); width: 248px; flex: 0 0 248px; padding: 24px 14px; display:flex; flex-direction:column; }
 .main-area { min-width:0; flex:1; }
 .content-wrap { max-width: 1440px; margin: 0 auto; padding: 34px 38px 56px; }
-.brand-mark { width: 34px; height:34px; display:grid; place-items:center; border:1px solid hsl(var(--accent)/.6); color:hsl(var(--accent)); border-radius:10px; font-family:var(--app-font-serif); font-size:18px; }
+.brand-mark { width:34px; height:34px; display:block; object-fit:contain; flex:0 0 auto; }
 .brand-word { font-family:var(--app-font-serif); letter-spacing:-.02em; font-size:20px; }
 .eyebrow { color:hsl(var(--muted-foreground)); font-size:11px; text-transform:uppercase; letter-spacing:.14em; font-weight:700; }
 .display-heading { font-family:var(--app-font-serif); letter-spacing:-.035em; font-weight:600; }

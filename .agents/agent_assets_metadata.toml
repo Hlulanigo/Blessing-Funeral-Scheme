@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "5KHOCcz5UoocNagnwcjw9"
+uri = "file://artifacts/blessing-funeral-scheme-app/public/blessing-mark.png"
+type = "image"
+title = "Blessing logo mark"
+description = "Transparent logo mark in the Blessing brand palette: midnight navy, antique gold, and muted sage."
+logical_id = "2477eae7-43f1-4375-be2b-197675f55b87"
+content_hash = "sha256:5b727fb59526d5e30ffa634d0ac4e4e9b7fbeb7c0c9e069a17a0aad6bd95421d"
+size = 973578
+mtime_ms = 1789637782072
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:425c4660-b6a5-4a7f-9db2-7e3510400b7e/2477eae7-43f1-4375-be2b-197675f55b87/b0b2fe8c-22db-44b0-a8cf-8d6008b8ef72"
+storage_version_token = "1789637879945434"
+content_type = "image/png"
