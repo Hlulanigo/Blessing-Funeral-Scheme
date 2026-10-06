@@ -1,5 +1,6 @@
 import {
   Check,
+  Copy,
   Edit3,
   Mail,
   MoreHorizontal,
@@ -68,6 +69,8 @@ export default function StaffPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [menuStaffId, setMenuStaffId] = useState<string | null>(null);
+  const [inviteUrl, setInviteUrl] = useState('');
+  const [inviteCopied, setInviteCopied] = useState(false);
 
   const params = useMemo<StaffFilters>(
     () => ({
@@ -78,7 +81,7 @@ export default function StaffPage() {
     [role, search, status],
   );
   const staffQuery = useListStaff(params, { query: { queryKey: getListStaffQueryKey(params) } });
-  const branchesQuery = useListBranches({ query: { queryKey: getListBranchesQueryKey() } });
+  const branchesQuery = useListBranches(undefined, { query: { queryKey: getListBranchesQueryKey() } });
   const createStaff = useCreateStaff();
   const updateStaff = useUpdateStaff();
   const staff = staffQuery.data ?? [];
@@ -94,6 +97,8 @@ export default function StaffPage() {
   const openCreate = () => {
     setEditingStaff(null);
     setMenuStaffId(null);
+    setInviteUrl('');
+    setInviteCopied(false);
     setFormOpen(true);
   };
 
@@ -130,6 +135,8 @@ export default function StaffPage() {
           </button>
         }
       />
+
+      {inviteUrl && <div className="card p-4 mb-4"><div className="flex items-center justify-between gap-3"><div><div className="text-sm font-semibold">Sign-in link ready</div><div className="text-xs text-muted-foreground mt-1">Share this link with the invited staff member at their work email.</div></div><button type="button" className="btn btn-secondary" onClick={() => { void navigator.clipboard.writeText(inviteUrl).then(() => setInviteCopied(true)); }}><Copy size={14} /> {inviteCopied ? 'Copied' : 'Copy link'}</button></div><input aria-label="Staff invitation sign-in link" className="input mt-3" readOnly value={inviteUrl} onFocus={(event) => event.currentTarget.select()} /></div>}
 
       <div className="grid grid-cols-3 gap-3 mb-5 max-[560px]:grid-cols-1">
         <div className="card stat-card">
@@ -245,7 +252,7 @@ export default function StaffPage() {
             if (editingStaff) {
               updateStaff.mutate(
                 { staffId: editingStaff.id, data: { ...data, status: currentStatus } },
-                { onSuccess: () => { invalidateStaff(); setFormOpen(false); } },
+                { onSuccess: (created) => { invalidateStaff(); setInviteUrl(created.inviteUrl ?? ''); setFormOpen(false); } },
               );
             } else {
               createStaff.mutate(
@@ -333,7 +340,7 @@ function StaffForm({ staff, branches, pending, error, onClose, onSubmit }: { sta
       <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); onSubmit(form, currentStatus); }}>
         <div className="rounded-xl border border-border bg-secondary/45 p-3 flex items-center gap-3">
           <div className="avatar large"><UserRound size={21} /></div>
-          <div><div className="font-semibold text-sm">{staff ? staff.name : 'New staff profile'}</div><div className="text-[11px] text-muted-foreground">{staff ? `Joined ${dateLabel(staff.joinedAt)}` : 'An invitation will be sent after saving'}</div></div>
+          <div><div className="font-semibold text-sm">{staff ? staff.name : 'New staff profile'}</div><div className="text-[11px] text-muted-foreground">{staff ? `Joined ${dateLabel(staff.joinedAt)}` : 'A sign-in link will be ready to share after saving'}</div></div>
         </div>
         <div className="grid sm:grid-cols-2 gap-3">
           <div><label className="label" htmlFor="staff-name">Full name</label><input data-testid="input-staff-name" id="staff-name" required minLength={2} className="input" value={form.name} onChange={(event) => set('name', event.target.value)} /></div>

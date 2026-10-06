@@ -6,11 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Branch {
-  id: string;
+export interface BranchInput {
+  /** @minLength 2 */
   name: string;
+  /** @minLength 2 */
   location: string;
-  active: boolean;
-  memberCount: number;
-  collectionRate: number;
 }

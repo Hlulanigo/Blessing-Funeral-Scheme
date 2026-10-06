@@ -9,6 +9,16 @@ export interface HealthStatus {
   status: string;
 }
 
+export type StaffRole = typeof StaffRole[keyof typeof StaffRole];
+
+
+export const StaffRole = {
+  administrator: 'administrator',
+  manager: 'manager',
+  coordinator: 'coordinator',
+  support: 'support',
+} as const;
+
 export interface AuthUser {
   id: string;
   /** @nullable */
@@ -19,6 +29,9 @@ export interface AuthUser {
   lastName: string | null;
   /** @nullable */
   profileImageUrl: string | null;
+  role: StaffRole | null;
+  /** @nullable */
+  branchId: string | null;
 }
 
 export interface AuthUserEnvelope {
@@ -89,19 +102,51 @@ export interface Branch {
   id: string;
   name: string;
   location: string;
+  active: boolean;
   memberCount: number;
   collectionRate: number;
 }
 
-export type StaffRole = typeof StaffRole[keyof typeof StaffRole];
+export interface BranchInput {
+  /** @minLength 2 */
+  name: string;
+  /** @minLength 2 */
+  location: string;
+}
 
+export interface BranchUpdate {
+  /** @minLength 2 */
+  name?: string;
+  /** @minLength 2 */
+  location?: string;
+  active?: boolean;
+}
 
-export const StaffRole = {
-  administrator: 'administrator',
-  manager: 'manager',
-  coordinator: 'coordinator',
-  support: 'support',
-} as const;
+export interface Settings {
+  defaultPlanName: string;
+  monthlyContribution: number;
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  gracePeriodDays: number;
+  contributionReminders: boolean;
+  requireClaimReview: boolean;
+}
+
+export interface SettingsUpdate {
+  /** @minLength 1 */
+  defaultPlanName?: string;
+  /** @exclusiveMinimum 0 */
+  monthlyContribution?: number;
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  gracePeriodDays?: number;
+  contributionReminders?: boolean;
+  requireClaimReview?: boolean;
+}
 
 export type StaffStatus = typeof StaffStatus[keyof typeof StaffStatus];
 
@@ -125,6 +170,7 @@ export interface Staff {
   joinedAt: string;
   /** @nullable */
   lastActiveAt: string | null;
+  inviteUrl?: string;
 }
 
 export interface StaffInput {
@@ -278,6 +324,47 @@ export interface ContributionInput {
   method: string;
 }
 
+export type ClaimDocumentContentType = typeof ClaimDocumentContentType[keyof typeof ClaimDocumentContentType];
+
+
+export const ClaimDocumentContentType = {
+  'application/pdf': 'application/pdf',
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+} as const;
+
+export interface ClaimDocument {
+  id: string;
+  claimId: string;
+  fileName: string;
+  contentType: ClaimDocumentContentType;
+  sizeBytes: number;
+  uploadedAt: string;
+}
+
+export type ClaimDocumentInputContentType = typeof ClaimDocumentInputContentType[keyof typeof ClaimDocumentInputContentType];
+
+
+export const ClaimDocumentInputContentType = {
+  'application/pdf': 'application/pdf',
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+} as const;
+
+export interface ClaimDocumentInput {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  fileName: string;
+  contentType: ClaimDocumentInputContentType;
+  /**
+     * @minLength 1
+     * @maxLength 7000000
+     */
+  dataBase64: string;
+}
+
 export interface ClaimInput {
   memberId: string;
   /** @minLength 2 */
@@ -342,6 +429,10 @@ iss?: string;
 
 export type LogoutBrowserSessionParams = {
 returnTo?: string;
+};
+
+export type ListBranchesParams = {
+includeInactive?: boolean;
 };
 
 export type ListStaffParams = {

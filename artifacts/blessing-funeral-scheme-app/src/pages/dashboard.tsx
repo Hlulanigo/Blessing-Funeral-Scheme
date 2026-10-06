@@ -1,13 +1,15 @@
 import { ArrowRight, CalendarClock, CheckCircle2, CircleAlert, Clock3, Plus, ShieldCheck, TrendingUp, UserPlus } from 'lucide-react';
 import { Link } from 'wouter';
-import { useGetDashboardSummary, useListActivity } from '@workspace/api-client-react';
+import { getGetSettingsQueryKey, useGetDashboardSummary, useGetSettings, useListActivity } from '@workspace/api-client-react';
 import { useAuth } from '@workspace/replit-auth-web';
 import { getGetDashboardSummaryQueryKey, getListActivityQueryKey } from '@workspace/api-client-react';
+import { hasRoleCapability } from '@workspace/api-zod';
 import { EmptyState, ErrorState, formatCurrency, formatDate, LoadingRows, PageHeader, StatusBadge } from '@/components/ui';
 
 export default function DashboardPage() {
   const auth = useAuth();
   const summaryQuery = useGetDashboardSummary({ query: { queryKey: getGetDashboardSummaryQueryKey() } });
+  const settingsQuery = useGetSettings({ query: { queryKey: getGetSettingsQueryKey() } });
   const activityQuery = useListActivity({ query: { queryKey: getListActivityQueryKey() } });
   const summary = summaryQuery.data;
   const activities = activityQuery.data ?? [];
@@ -18,13 +20,13 @@ export default function DashboardPage() {
   const today = new Intl.DateTimeFormat('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
   return (
     <div className="content-wrap page-enter">
-      <PageHeader eyebrow={today} title={`${greeting}, ${firstName}.`} description="A calm view of the work that keeps every family covered." actions={<><Link href="/members" data-testid="link-dashboard-members" className="btn btn-secondary"><UserPlus size={15} /> Enrol member</Link><Link href="/claims" data-testid="link-dashboard-claims" className="btn btn-primary"><Plus size={15} /> New claim</Link></>} />
+      <PageHeader eyebrow={today} title={`${greeting}, ${firstName}.`} description="A calm view of the work that keeps every family covered." actions={<>{hasRoleCapability(auth.user?.role ?? '', 'editMembers') && <Link href="/members" data-testid="link-dashboard-members" className="btn btn-secondary"><UserPlus size={15} /> Enrol member</Link>}{hasRoleCapability(auth.user?.role ?? '', 'submitClaims') && <Link href="/claims" data-testid="link-dashboard-claims" className="btn btn-primary"><Plus size={15} /> New claim</Link>}</>} />
       {loading ? <div className="grid gap-4 md:grid-cols-4 stat-grid">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="card stat-card skeleton" />)}</div> : summaryQuery.isError ? <div className="card"><ErrorState onRetry={() => { summaryQuery.refetch(); activityQuery.refetch(); }} /></div> : (
         <>
           <div className="grid gap-4 md:grid-cols-4 stat-grid">
              <div className="card stat-card"><div className="flex items-center justify-between"><span className="stat-label">Active members</span><ShieldCheck size={16} className="text-[hsl(var(--chart-3))]" /></div><div className="stat-value" data-testid="value-active-members">{summary?.activeMembers ?? 0}</div><div className="text-[11px] text-muted-foreground mt-2">Live count from member records</div></div>
             <div className="card stat-card"><div className="flex items-center justify-between"><span className="stat-label">Collected this month</span><TrendingUp size={16} className="text-[hsl(var(--accent))]" /></div><div className="stat-value" data-testid="value-contributions">{formatCurrency(summary?.contributionsThisMonth ?? 0)}</div><div className="text-[11px] text-muted-foreground mt-2">Across {summary?.branches?.length ?? 0} branches</div></div>
-            <div className="card stat-card"><div className="flex items-center justify-between"><span className="stat-label">Overdue contributions</span><CircleAlert size={16} className="text-destructive" /></div><div className="stat-value" data-testid="value-overdue">{summary?.overdueContributions ?? 0}</div><Link href="/contributions" data-testid="link-dashboard-overdue" className="text-[11px] text-destructive font-bold mt-2 inline-flex items-center gap-1">Review ledger <ArrowRight size={12} /></Link></div>
+             <div className="card stat-card"><div className="flex items-center justify-between"><span className="stat-label">Overdue follow-up alerts</span><CircleAlert size={16} className="text-destructive" /></div><div className="stat-value" data-testid="value-overdue">{settingsQuery.data?.contributionReminders === false ? 'Off' : summary?.overdueContributions ?? 0}</div>{settingsQuery.data?.contributionReminders === false ? <div className="text-[11px] text-muted-foreground mt-2">Alerts disabled in settings</div> : <Link href="/contributions" data-testid="link-dashboard-overdue" className="text-[11px] text-destructive font-bold mt-2 inline-flex items-center gap-1">Review ledger <ArrowRight size={12} /></Link>}</div>
             <div className="card stat-card"><div className="flex items-center justify-between"><span className="stat-label">Open claims</span><Clock3 size={16} className="text-[hsl(var(--accent))]" /></div><div className="stat-value" data-testid="value-open-claims">{summary?.openClaims ?? 0}</div><div className="text-[11px] text-muted-foreground mt-2"><span className="font-bold text-foreground">{summary?.approvedClaims ?? 0}</span> approved for payment</div></div>
           </div>
           <div className="grid gap-5 lg:grid-cols-[1.25fr_.75fr] mt-5">

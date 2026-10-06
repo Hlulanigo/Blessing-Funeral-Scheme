@@ -3,14 +3,15 @@ import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import type { AuthUser } from '@workspace/replit-auth-web';
 import { getListActivityQueryKey, useListActivity } from '@workspace/api-client-react';
+import { hasRoleCapability, type RoleCapability } from '@workspace/api-zod';
 import { BrandMark } from '@/components/brand-mark';
 
 const navItems = [
-  { href: '/', label: 'Operations', icon: LayoutDashboard },
-  { href: '/members', label: 'Members', icon: Users },
-  { href: '/contributions', label: 'Contributions', icon: CircleDollarSign },
-  { href: '/claims', label: 'Claims', icon: FileText },
-  { href: '/branches', label: 'Branches', icon: Building2 },
+  { href: '/', label: 'Operations', icon: LayoutDashboard, capability: 'viewDashboard' },
+  { href: '/members', label: 'Members', icon: Users, capability: 'viewMembers' },
+  { href: '/contributions', label: 'Contributions', icon: CircleDollarSign, capability: 'viewContributions' },
+  { href: '/claims', label: 'Claims', icon: FileText, capability: 'viewClaims' },
+  { href: '/branches', label: 'Branches', icon: Building2, capability: 'viewBranches' },
 ];
 
 export function AppShell({ children, user, logout }: { children: ReactNode; user: AuthUser; logout: () => void }) {
@@ -22,7 +23,8 @@ export function AppShell({ children, user, logout }: { children: ReactNode; user
   const activities = activityQuery.data ?? [];
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'Workspace user';
   const initials = [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join('').toUpperCase() || displayName.slice(0, 2).toUpperCase();
-  const profileLabel = user?.email ? 'Authenticated workspace user' : 'Workspace administrator';
+  const profileLabel = user.role ? `${user.role[0].toUpperCase()}${user.role.slice(1)}` : 'Access not assigned';
+  const visibleNavItems = navItems.filter(({ capability }) => hasRoleCapability(user.role ?? '', capability as RoleCapability));
   const sidebar = (
     <aside className="sidebar" aria-label="Primary navigation">
       <div className="flex items-center gap-3 px-3 mb-10">
@@ -31,15 +33,17 @@ export function AppShell({ children, user, logout }: { children: ReactNode; user
       </div>
       <div className="px-3 mb-3 eyebrow" style={{ color: 'hsl(var(--sidebar-foreground)/.45)' }}>Workspace</div>
       <nav className="space-y-1">
-        {navItems.map(({ href, label, icon: Icon }) => (
+        {visibleNavItems.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} data-testid={`link-${label.toLowerCase()}`} className={`nav-link ${location === href || (href !== '/' && location.startsWith(href)) ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>
             <Icon size={17} strokeWidth={1.8} /><span className="nav-copy">{label}</span>
           </Link>
         ))}
       </nav>
-      <div className="px-3 mb-3 mt-9 eyebrow" style={{ color: 'hsl(var(--sidebar-foreground)/.45)' }}>Administration</div>
-      <Link href="/staff" data-testid="link-staff" className={`nav-link ${location === '/staff' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}><UserRound size={17} strokeWidth={1.8} /><span className="nav-copy">Staff</span></Link>
-      <Link href="/settings" data-testid="link-settings" className={`nav-link ${location === '/settings' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}><Settings size={17} strokeWidth={1.8} /><span className="nav-copy">Settings</span></Link>
+      {hasRoleCapability(user.role ?? '', 'manageStaff') && <>
+        <div className="px-3 mb-3 mt-9 eyebrow" style={{ color: 'hsl(var(--sidebar-foreground)/.45)' }}>Administration</div>
+        <Link href="/staff" data-testid="link-staff" className={`nav-link ${location === '/staff' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}><UserRound size={17} strokeWidth={1.8} /><span className="nav-copy">Staff</span></Link>
+        {hasRoleCapability(user.role ?? '', 'manageSettings') && <Link href="/settings" data-testid="link-settings" className={`nav-link ${location === '/settings' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}><Settings size={17} strokeWidth={1.8} /><span className="nav-copy">Settings</span></Link>}
+      </>}
       <div className="mt-auto pt-8 sidebar-note">
         <div className="rounded-xl border p-3" style={{ borderColor: 'hsl(var(--sidebar-border))', background: 'hsl(var(--sidebar-accent)/.65)' }}>
           <ShieldCheck size={17} style={{ color: 'hsl(var(--sidebar-primary))' }} />

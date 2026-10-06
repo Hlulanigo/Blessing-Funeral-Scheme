@@ -167,11 +167,44 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Activity"
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get scheme settings
+      responses:
+        "200":
+          description: Current scheme settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update scheme settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated scheme settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
   /branches:
     get:
       operationId: listBranches
       tags: [branches]
       summary: List scheme branches
+      parameters:
+        - name: includeInactive
+          in: query
+          schema: { type: boolean, default: false }
       responses:
         "200":
           description: Branches
@@ -181,6 +214,48 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Branch"
+    post:
+      operationId: createBranch
+      tags: [branches]
+      summary: Create a scheme branch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchInput"
+      responses:
+        "201":
+          description: Created branch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+  /branches/{branchId}:
+    patch:
+      operationId: updateBranch
+      tags: [branches]
+      summary: Update or deactivate a branch
+      parameters:
+        - name: branchId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchUpdate"
+      responses:
+        "200":
+          description: Updated branch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /staff:
     get:
       operationId: listStaff
@@ -452,6 +527,71 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Claim"
+  /claims/{claimId}/documents:
+    get:
+      operationId: listClaimDocuments
+      tags: [claims]
+      summary: List evidence files for a claim
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Claim evidence metadata
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClaimDocument"
+    post:
+      operationId: uploadClaimDocument
+      tags: [claims]
+      summary: Upload evidence for a claim
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimDocumentInput"
+      responses:
+        "201":
+          description: Uploaded claim evidence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimDocument"
+  /claims/{claimId}/documents/{documentId}:
+    get:
+      operationId: downloadClaimDocument
+      tags: [claims]
+      summary: Download evidence for a claim
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: documentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Claim evidence file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/NotFound"
   /claims/{claimId}:
     patch:
       operationId: updateClaim
@@ -533,7 +673,12 @@ components:
         firstName: { type: ["string", "null"] }
         lastName: { type: ["string", "null"] }
         profileImageUrl: { type: ["string", "null"] }
-      required: [id, email, firstName, lastName, profileImageUrl]
+        role:
+          oneOf:
+            - $ref: "#/components/schemas/StaffRole"
+            - type: "null"
+        branchId: { type: ["string", "null"] }
+      required: [id, email, firstName, lastName, profileImageUrl, role, branchId]
     AuthUserEnvelope:
       type: object
       properties:
@@ -586,9 +731,39 @@ components:
         id: { type: string }
         name: { type: string }
         location: { type: string }
+        active: { type: boolean }
         memberCount: { type: integer }
         collectionRate: { type: integer }
-      required: [id, name, location, memberCount, collectionRate]
+      required: [id, name, location, active, memberCount, collectionRate]
+    BranchInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        location: { type: string, minLength: 2 }
+      required: [name, location]
+    BranchUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        location: { type: string, minLength: 2 }
+        active: { type: boolean }
+    Settings:
+      type: object
+      properties:
+        defaultPlanName: { type: string }
+        monthlyContribution: { type: number }
+        gracePeriodDays: { type: integer, minimum: 0, maximum: 60 }
+        contributionReminders: { type: boolean }
+        requireClaimReview: { type: boolean }
+      required: [defaultPlanName, monthlyContribution, gracePeriodDays, contributionReminders, requireClaimReview]
+    SettingsUpdate:
+      type: object
+      properties:
+        defaultPlanName: { type: string, minLength: 1 }
+        monthlyContribution: { type: number, exclusiveMinimum: 0 }
+        gracePeriodDays: { type: integer, minimum: 0, maximum: 60 }
+        contributionReminders: { type: boolean }
+        requireClaimReview: { type: boolean }
     StaffRole:
       type: string
       enum: [administrator, manager, coordinator, support]
@@ -610,6 +785,7 @@ components:
           $ref: "#/components/schemas/StaffStatus"
         joinedAt: { type: string, format: date }
         lastActiveAt: { type: ["string", "null"], format: date }
+        inviteUrl: { type: string, format: uri }
       required: [id, name, email, phone, role, branchId, branchName, status, joinedAt, lastActiveAt]
     StaffInput:
       type: object
@@ -758,6 +934,23 @@ components:
           $ref: "#/components/schemas/ClaimStatus"
         notes: { type: string }
       required: [id, claimNumber, memberId, memberName, deceasedName, relationship, amount, submittedAt, status, notes]
+    ClaimDocument:
+      type: object
+      properties:
+        id: { type: string }
+        claimId: { type: string }
+        fileName: { type: string }
+        contentType: { type: string, enum: [application/pdf, image/jpeg, image/png] }
+        sizeBytes: { type: integer }
+        uploadedAt: { type: string, format: date-time }
+      required: [id, claimId, fileName, contentType, sizeBytes, uploadedAt]
+    ClaimDocumentInput:
+      type: object
+      properties:
+        fileName: { type: string, minLength: 1, maxLength: 255 }
+        contentType: { type: string, enum: [application/pdf, image/jpeg, image/png] }
+        dataBase64: { type: string, minLength: 1, maxLength: 7000000 }
+      required: [fileName, contentType, dataBase64]
     ClaimInput:
       type: object
       properties:

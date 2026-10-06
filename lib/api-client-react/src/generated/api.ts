@@ -27,7 +27,11 @@ import type {
   BeneficiaryInput,
   BeneficiaryUpdate,
   Branch,
+  BranchInput,
+  BranchUpdate,
   Claim,
+  ClaimDocument,
+  ClaimDocumentInput,
   ClaimInput,
   ClaimUpdate,
   Contribution,
@@ -36,6 +40,7 @@ import type {
   ErrorEnvelopeResponseResponse,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
+  ListBranchesParams,
   ListClaimsParams,
   ListContributionsParams,
   ListMembersParams,
@@ -49,6 +54,8 @@ import type {
   MobileTokenExchangeRequest,
   MobileTokenExchangeSuccess,
   NotFoundResponse,
+  Settings,
+  SettingsUpdate,
   Staff,
   StaffInput,
   StaffUpdate
@@ -804,20 +811,20 @@ export function useListActivity<TData = Awaited<ReturnType<typeof listActivity>>
 
 
 
-export const getListBranchesUrl = () => {
+export const getGetSettingsUrl = () => {
 
 
 
 
-  return `/api/branches`
+  return `/api/settings`
 }
 
 /**
- * @summary List scheme branches
+ * @summary Get scheme settings
  */
-export const listBranches = async ( options?: Parameters<typeof customFetch>[1]): Promise<Branch[]> => {
+export const getSettings = async ( options?: Parameters<typeof customFetch>[1]): Promise<Settings> => {
 
-  return customFetch<Branch[]>(getListBranchesUrl(),
+  return customFetch<Settings>(getGetSettingsUrl(),
   {
     ...options,
     method: 'GET'
@@ -830,23 +837,195 @@ export const listBranches = async ( options?: Parameters<typeof customFetch>[1])
 
 
 
-export const getListBranchesQueryKey = () => {
+export const getGetSettingsQueryKey = () => {
     return [
-    `/api/branches`
+    `/api/settings`
     ] as const;
     }
 
 
-export const getListBranchesQueryOptions = <TData = Awaited<ReturnType<typeof listBranches>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBranches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListBranchesQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetSettingsQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBranches>>> = ({ signal }) => listBranches({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSettings>>> = ({ signal }) => getSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getSettings>>>
+export type GetSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get scheme settings
+ */
+
+export function useGetSettings<TData = Awaited<ReturnType<typeof getSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateSettingsUrl = () => {
+
+
+
+
+  return `/api/settings`
+}
+
+/**
+ * @summary Update scheme settings
+ */
+export const updateSettings = async (settingsUpdate: SettingsUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Settings> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Settings>(getUpdateSettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(settingsUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateSettingsMutationKey = () => ['updateSettings'] as const;
+
+export const getUpdateSettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettings>>, TError,UpdateSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSettings>>, TError,UpdateSettingsMutationVariables, TContext> => {
+
+const mutationKey = getUpdateSettingsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSettings>>, UpdateSettingsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateSettings>>>
+    export type UpdateSettingsMutationBody = BodyType<SettingsUpdate>
+    export type UpdateSettingsMutationError = ErrorType<unknown>
+    export type UpdateSettingsMutationVariables = {data: BodyType<SettingsUpdate>}
+
+    /**
+ * @summary Update scheme settings
+ */
+export const useUpdateSettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettings>>, TError,UpdateSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSettings>>,
+        TError,
+        UpdateSettingsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateSettingsMutationOptions(options));
+    }
+
+export const getListBranchesUrl = (params?: ListBranchesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/branches?${stringifiedParams}` : `/api/branches`
+}
+
+/**
+ * @summary List scheme branches
+ */
+export const listBranches = async (params?: ListBranchesParams, options?: Parameters<typeof customFetch>[1]): Promise<Branch[]> => {
+
+  return customFetch<Branch[]>(getListBranchesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBranchesQueryKey = (params?: ListBranchesParams,) => {
+    return [
+    `/api/branches`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListBranchesQueryOptions = <TData = Awaited<ReturnType<typeof listBranches>>, TError = ErrorType<unknown>>(params?: ListBranchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBranches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBranchesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBranches>>> = ({ signal }) => listBranches(params, { signal, ...requestOptions });
 
 
 
@@ -864,11 +1043,11 @@ export type ListBranchesQueryError = ErrorType<unknown>
  */
 
 export function useListBranches<TData = Awaited<ReturnType<typeof listBranches>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBranches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListBranchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBranches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListBranchesQueryOptions(options)
+  const queryOptions = getListBranchesQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -880,6 +1059,183 @@ export function useListBranches<TData = Awaited<ReturnType<typeof listBranches>>
 
 
 
+
+export const getCreateBranchUrl = () => {
+
+
+
+
+  return `/api/branches`
+}
+
+/**
+ * @summary Create a scheme branch
+ */
+export const createBranch = async (branchInput: BranchInput, options?: Parameters<typeof customFetch>[1]): Promise<Branch> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Branch>(getCreateBranchUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(branchInput)
+  }
+);}
+
+
+
+
+
+export const getCreateBranchMutationKey = () => ['createBranch'] as const;
+
+export const getCreateBranchMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBranch>>, TError,CreateBranchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBranch>>, TError,CreateBranchMutationVariables, TContext> => {
+
+const mutationKey = getCreateBranchMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBranch>>, CreateBranchMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createBranch(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBranchMutationResult = NonNullable<Awaited<ReturnType<typeof createBranch>>>
+    export type CreateBranchMutationBody = BodyType<BranchInput>
+    export type CreateBranchMutationError = ErrorType<unknown>
+    export type CreateBranchMutationVariables = {data: BodyType<BranchInput>}
+
+    /**
+ * @summary Create a scheme branch
+ */
+export const useCreateBranch = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBranch>>, TError,CreateBranchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createBranch>>,
+        TError,
+        CreateBranchMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateBranchMutationOptions(options));
+    }
+
+export const getUpdateBranchUrl = (branchId: string,) => {
+
+
+
+
+  return `/api/branches/${branchId}`
+}
+
+/**
+ * @summary Update or deactivate a branch
+ */
+export const updateBranch = async (branchId: string,
+    branchUpdate: BranchUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Branch> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Branch>(getUpdateBranchUrl(branchId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(branchUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateBranchMutationKey = () => ['updateBranch'] as const;
+
+export const getUpdateBranchMutationOptions = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBranch>>, TError,UpdateBranchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateBranch>>, TError,UpdateBranchMutationVariables, TContext> => {
+
+const mutationKey = getUpdateBranchMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBranch>>, UpdateBranchMutationVariables> = (props) => {
+          const {branchId,data} = props ?? {};
+
+          return  updateBranch(branchId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateBranchMutationResult = NonNullable<Awaited<ReturnType<typeof updateBranch>>>
+    export type UpdateBranchMutationBody = BodyType<BranchUpdate>
+    export type UpdateBranchMutationError = ErrorType<NotFoundResponse>
+    export type UpdateBranchMutationVariables = {branchId: string;data: BodyType<BranchUpdate>}
+
+    /**
+ * @summary Update or deactivate a branch
+ */
+export const useUpdateBranch = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBranch>>, TError,UpdateBranchMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateBranch>>,
+        TError,
+        UpdateBranchMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateBranchMutationOptions(options));
+    }
 
 export const getListStaffUrl = (params?: ListStaffParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -2075,6 +2431,254 @@ export const useCreateClaim = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreateClaimMutationOptions(options));
     }
+
+export const getListClaimDocumentsUrl = (claimId: string,) => {
+
+
+
+
+  return `/api/claims/${claimId}/documents`
+}
+
+/**
+ * @summary List evidence files for a claim
+ */
+export const listClaimDocuments = async (claimId: string, options?: Parameters<typeof customFetch>[1]): Promise<ClaimDocument[]> => {
+
+  return customFetch<ClaimDocument[]>(getListClaimDocumentsUrl(claimId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClaimDocumentsQueryKey = (claimId: string,) => {
+    return [
+    `/api/claims/${claimId}/documents`
+    ] as const;
+    }
+
+
+export const getListClaimDocumentsQueryOptions = <TData = Awaited<ReturnType<typeof listClaimDocuments>>, TError = ErrorType<unknown>>(claimId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClaimDocuments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClaimDocumentsQueryKey(claimId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClaimDocuments>>> = ({ signal }) => listClaimDocuments(claimId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: claimId !== null && claimId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClaimDocuments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClaimDocumentsQueryResult = NonNullable<Awaited<ReturnType<typeof listClaimDocuments>>>
+export type ListClaimDocumentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List evidence files for a claim
+ */
+
+export function useListClaimDocuments<TData = Awaited<ReturnType<typeof listClaimDocuments>>, TError = ErrorType<unknown>>(
+ claimId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClaimDocuments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClaimDocumentsQueryOptions(claimId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUploadClaimDocumentUrl = (claimId: string,) => {
+
+
+
+
+  return `/api/claims/${claimId}/documents`
+}
+
+/**
+ * @summary Upload evidence for a claim
+ */
+export const uploadClaimDocument = async (claimId: string,
+    claimDocumentInput: ClaimDocumentInput, options?: Parameters<typeof customFetch>[1]): Promise<ClaimDocument> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ClaimDocument>(getUploadClaimDocumentUrl(claimId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(claimDocumentInput)
+  }
+);}
+
+
+
+
+
+export const getUploadClaimDocumentMutationKey = () => ['uploadClaimDocument'] as const;
+
+export const getUploadClaimDocumentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadClaimDocument>>, TError,UploadClaimDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadClaimDocument>>, TError,UploadClaimDocumentMutationVariables, TContext> => {
+
+const mutationKey = getUploadClaimDocumentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadClaimDocument>>, UploadClaimDocumentMutationVariables> = (props) => {
+          const {claimId,data} = props ?? {};
+
+          return  uploadClaimDocument(claimId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadClaimDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof uploadClaimDocument>>>
+    export type UploadClaimDocumentMutationBody = BodyType<ClaimDocumentInput>
+    export type UploadClaimDocumentMutationError = ErrorType<unknown>
+    export type UploadClaimDocumentMutationVariables = {claimId: string;data: BodyType<ClaimDocumentInput>}
+
+    /**
+ * @summary Upload evidence for a claim
+ */
+export const useUploadClaimDocument = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadClaimDocument>>, TError,UploadClaimDocumentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadClaimDocument>>,
+        TError,
+        UploadClaimDocumentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUploadClaimDocumentMutationOptions(options));
+    }
+
+export const getDownloadClaimDocumentUrl = (claimId: string,
+    documentId: string,) => {
+
+
+
+
+  return `/api/claims/${claimId}/documents/${documentId}`
+}
+
+/**
+ * @summary Download evidence for a claim
+ */
+export const downloadClaimDocument = async (claimId: string,
+    documentId: string, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadClaimDocumentUrl(claimId,documentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadClaimDocumentQueryKey = (claimId: string,
+    documentId: string,) => {
+    return [
+    `/api/claims/${claimId}/documents/${documentId}`
+    ] as const;
+    }
+
+
+export const getDownloadClaimDocumentQueryOptions = <TData = Awaited<ReturnType<typeof downloadClaimDocument>>, TError = ErrorType<NotFoundResponse>>(claimId: string,
+    documentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadClaimDocument>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadClaimDocumentQueryKey(claimId,documentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadClaimDocument>>> = ({ signal }) => downloadClaimDocument(claimId,documentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: claimId !== null && claimId !== undefined && documentId !== null && documentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadClaimDocument>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadClaimDocumentQueryResult = NonNullable<Awaited<ReturnType<typeof downloadClaimDocument>>>
+export type DownloadClaimDocumentQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary Download evidence for a claim
+ */
+
+export function useDownloadClaimDocument<TData = Awaited<ReturnType<typeof downloadClaimDocument>>, TError = ErrorType<NotFoundResponse>>(
+ claimId: string,
+    documentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadClaimDocument>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadClaimDocumentQueryOptions(claimId,documentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getUpdateClaimUrl = (claimId: string,) => {
 
