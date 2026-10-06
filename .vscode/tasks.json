@@ -1,0 +1,26 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Blessing Funeral Scheme app",
+			"type": "shell",
+			"command": "env PORT=5173 BASE_PATH=/ pnpm --filter @workspace/blessing-funeral-scheme-app run dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Sign in to GitHub",
+			"type": "shell",
+			"command": "gh auth login --hostname github.com --git-protocol https --web",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "GitHub browser sign-in",
+			"type": "shell",
+			"command": "env -u GITHUB_TOKEN gh auth login --hostname github.com --git-protocol https --web",
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}
