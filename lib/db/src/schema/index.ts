@@ -17,7 +17,18 @@ export const branches = pgTable("branches", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   location: text("location").notNull(),
+  active: boolean("active").notNull().default(true),
   createdAt: createdAt(),
+});
+
+export const systemSettings = pgTable("system_settings", {
+  id: text("id").primaryKey(),
+  defaultPlanName: text("default_plan_name").notNull(),
+  monthlyContributionCents: integer("monthly_contribution_cents").notNull(),
+  gracePeriodDays: integer("grace_period_days").notNull().default(7),
+  contributionReminders: boolean("contribution_reminders").notNull().default(true),
+  requireClaimReview: boolean("require_claim_review").notNull().default(true),
+  updatedAt: updatedAt(),
 });
 
 export const staff = pgTable("staff", {
@@ -61,6 +72,7 @@ export const members = pgTable("members", {
   planId: text("plan_id")
     .notNull()
     .references(() => plans.id, { onDelete: "restrict" }),
+  monthlyContributionCents: integer("monthly_contribution_cents").notNull().default(0),
   status: text("status").notNull().default("active"),
   joinedAt: timestamp("joined_at", { withTimezone: true }).notNull(),
   nextContributionDate: timestamp("next_contribution_date", {
@@ -112,6 +124,19 @@ export const claims = pgTable("claims", {
   updatedAt: updatedAt(),
 });
 
+export const claimDocuments = pgTable("claim_documents", {
+  id: text("id").primaryKey(),
+  claimId: text("claim_id")
+    .notNull()
+    .references(() => claims.id, { onDelete: "cascade" }),
+  fileName: text("file_name").notNull(),
+  contentType: text("content_type").notNull(),
+  dataBase64: text("data_base64").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  uploadedBy: text("uploaded_by").references(() => staff.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+});
+
 export const activity = pgTable("activity", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
@@ -127,6 +152,7 @@ export type MemberRecord = typeof members.$inferSelect;
 export type BeneficiaryRecord = typeof beneficiaries.$inferSelect;
 export type ContributionRecord = typeof contributions.$inferSelect;
 export type ClaimRecord = typeof claims.$inferSelect;
+export type ClaimDocumentRecord = typeof claimDocuments.$inferSelect;
 export type ActivityRecord = typeof activity.$inferSelect;
 
 export * from "./auth";

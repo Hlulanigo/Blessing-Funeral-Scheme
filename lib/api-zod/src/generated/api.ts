@@ -30,7 +30,9 @@ export const GetCurrentAuthUserResponse = zod.object({
   "email": zod.string().email().nullable(),
   "firstName": zod.string().nullable(),
   "lastName": zod.string().nullable(),
-  "profileImageUrl": zod.string().nullable()
+  "profileImageUrl": zod.string().nullable(),
+  "role": zod.union([zod.enum(['administrator', 'manager', 'coordinator', 'support']),zod.null()]),
+  "branchId": zod.string().nullable()
 }),zod.null()])
 })
 
@@ -122,6 +124,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "location": zod.string(),
+  "active": zod.boolean(),
   "memberCount": zod.number().int(),
   "collectionRate": zod.number().int()
 })),
@@ -146,16 +149,126 @@ export const ListActivityResponse = zod.array(ListActivityResponseItem)
 
 
 /**
+ * @summary Get scheme settings
+ */
+export const getSettingsResponseGracePeriodDaysMin = 0;
+export const getSettingsResponseGracePeriodDaysMax = 60;
+
+
+
+export const GetSettingsResponse = zod.object({
+  "defaultPlanName": zod.string(),
+  "monthlyContribution": zod.number(),
+  "gracePeriodDays": zod.number().int().min(getSettingsResponseGracePeriodDaysMin).max(getSettingsResponseGracePeriodDaysMax),
+  "contributionReminders": zod.boolean(),
+  "requireClaimReview": zod.boolean()
+})
+
+
+/**
+ * @summary Update scheme settings
+ */
+
+export const updateSettingsBodyMonthlyContributionExclusiveMin = 0;
+
+export const updateSettingsBodyGracePeriodDaysMin = 0;
+export const updateSettingsBodyGracePeriodDaysMax = 60;
+
+
+
+export const UpdateSettingsBody = zod.object({
+  "defaultPlanName": zod.string().min(1).optional(),
+  "monthlyContribution": zod.number().gt(updateSettingsBodyMonthlyContributionExclusiveMin).optional(),
+  "gracePeriodDays": zod.number().int().min(updateSettingsBodyGracePeriodDaysMin).max(updateSettingsBodyGracePeriodDaysMax).optional(),
+  "contributionReminders": zod.boolean().optional(),
+  "requireClaimReview": zod.boolean().optional()
+})
+
+export const updateSettingsResponseGracePeriodDaysMin = 0;
+export const updateSettingsResponseGracePeriodDaysMax = 60;
+
+
+
+export const UpdateSettingsResponse = zod.object({
+  "defaultPlanName": zod.string(),
+  "monthlyContribution": zod.number(),
+  "gracePeriodDays": zod.number().int().min(updateSettingsResponseGracePeriodDaysMin).max(updateSettingsResponseGracePeriodDaysMax),
+  "contributionReminders": zod.boolean(),
+  "requireClaimReview": zod.boolean()
+})
+
+
+/**
  * @summary List scheme branches
  */
+export const listBranchesQueryIncludeInactiveDefault = false;
+
+export const ListBranchesQueryParams = zod.object({
+  "includeInactive": zod.coerce.boolean().default(listBranchesQueryIncludeInactiveDefault)
+})
+
 export const ListBranchesResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "location": zod.string(),
+  "active": zod.boolean(),
   "memberCount": zod.number().int(),
   "collectionRate": zod.number().int()
 })
 export const ListBranchesResponse = zod.array(ListBranchesResponseItem)
+
+
+/**
+ * @summary Create a scheme branch
+ */
+export const createBranchBodyNameMin = 2;
+
+export const createBranchBodyLocationMin = 2;
+
+
+
+export const CreateBranchBody = zod.object({
+  "name": zod.string().min(createBranchBodyNameMin),
+  "location": zod.string().min(createBranchBodyLocationMin)
+})
+
+export const CreateBranchResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "active": zod.boolean(),
+  "memberCount": zod.number().int(),
+  "collectionRate": zod.number().int()
+})
+
+
+/**
+ * @summary Update or deactivate a branch
+ */
+export const UpdateBranchParams = zod.object({
+  "branchId": zod.coerce.string()
+})
+
+export const updateBranchBodyNameMin = 2;
+
+export const updateBranchBodyLocationMin = 2;
+
+
+
+export const UpdateBranchBody = zod.object({
+  "name": zod.string().min(updateBranchBodyNameMin).optional(),
+  "location": zod.string().min(updateBranchBodyLocationMin).optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateBranchResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "location": zod.string(),
+  "active": zod.boolean(),
+  "memberCount": zod.number().int(),
+  "collectionRate": zod.number().int()
+})
 
 
 /**
@@ -177,7 +290,8 @@ export const ListStaffResponseItem = zod.object({
   "branchName": zod.string(),
   "status": zod.enum(['active', 'invited', 'suspended']),
   "joinedAt": zod.coerce.date(),
-  "lastActiveAt": zod.coerce.date().nullable()
+  "lastActiveAt": zod.coerce.date().nullable(),
+  "inviteUrl": zod.string().url().optional()
 })
 export const ListStaffResponse = zod.array(ListStaffResponseItem)
 
@@ -209,7 +323,8 @@ export const CreateStaffResponse = zod.object({
   "branchName": zod.string(),
   "status": zod.enum(['active', 'invited', 'suspended']),
   "joinedAt": zod.coerce.date(),
-  "lastActiveAt": zod.coerce.date().nullable()
+  "lastActiveAt": zod.coerce.date().nullable(),
+  "inviteUrl": zod.string().url().optional()
 })
 
 
@@ -245,7 +360,8 @@ export const UpdateStaffResponse = zod.object({
   "branchName": zod.string(),
   "status": zod.enum(['active', 'invited', 'suspended']),
   "joinedAt": zod.coerce.date(),
-  "lastActiveAt": zod.coerce.date().nullable()
+  "lastActiveAt": zod.coerce.date().nullable(),
+  "inviteUrl": zod.string().url().optional()
 })
 
 
@@ -607,6 +723,64 @@ export const CreateClaimResponse = zod.object({
   "status": zod.enum(['submitted', 'reviewing', 'approved', 'paid', 'declined']),
   "notes": zod.string()
 })
+
+
+/**
+ * @summary List evidence files for a claim
+ */
+export const ListClaimDocumentsParams = zod.object({
+  "claimId": zod.coerce.string()
+})
+
+export const ListClaimDocumentsResponseItem = zod.object({
+  "id": zod.string(),
+  "claimId": zod.string(),
+  "fileName": zod.string(),
+  "contentType": zod.enum(['application/pdf', 'image/jpeg', 'image/png']),
+  "sizeBytes": zod.number().int(),
+  "uploadedAt": zod.coerce.date()
+})
+export const ListClaimDocumentsResponse = zod.array(ListClaimDocumentsResponseItem)
+
+
+/**
+ * @summary Upload evidence for a claim
+ */
+export const UploadClaimDocumentParams = zod.object({
+  "claimId": zod.coerce.string()
+})
+
+export const uploadClaimDocumentBodyFileNameMax = 255;
+
+export const uploadClaimDocumentBodyDataBase64Max = 7000000;
+
+
+
+export const UploadClaimDocumentBody = zod.object({
+  "fileName": zod.string().min(1).max(uploadClaimDocumentBodyFileNameMax),
+  "contentType": zod.enum(['application/pdf', 'image/jpeg', 'image/png']),
+  "dataBase64": zod.string().min(1).max(uploadClaimDocumentBodyDataBase64Max)
+})
+
+export const UploadClaimDocumentResponse = zod.object({
+  "id": zod.string(),
+  "claimId": zod.string(),
+  "fileName": zod.string(),
+  "contentType": zod.enum(['application/pdf', 'image/jpeg', 'image/png']),
+  "sizeBytes": zod.number().int(),
+  "uploadedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Download evidence for a claim
+ */
+export const DownloadClaimDocumentParams = zod.object({
+  "claimId": zod.coerce.string(),
+  "documentId": zod.coerce.string()
+})
+
+export const DownloadClaimDocumentResponse = zod.unknown()
 
 
 /**

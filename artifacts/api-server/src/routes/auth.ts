@@ -4,7 +4,7 @@ import {
   GetCurrentAuthUserResponse,
   LogoutMobileSessionResponse,
 } from "@workspace/api-zod";
-import { db, staff, usersTable } from "@workspace/db";
+import { db, branches, staff, usersTable } from "@workspace/db";
 import { and, eq, isNull, isNotNull } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import * as oidc from "openid-client";
@@ -59,7 +59,7 @@ function getSafeReturnTo(value: unknown): string {
 async function upsertUser(claims: Record<string, unknown>) {
   const userData = {
     id: claims.sub as string,
-    email: (claims.email as string) || null,
+    email: claims.email_verified === true ? (claims.email as string) || null : null,
     firstName: (claims.first_name as string) || null,
     lastName: (claims.last_name as string) || null,
     profileImageUrl: (claims.profile_image_url || claims.picture) as string | null,
@@ -80,8 +80,8 @@ async function linkStaffAccount(user: {
   email: string | null;
   firstName: string | null;
   lastName: string | null;
-}) {
-  if (user.email) {
+}, emailVerified: boolean) {
+  if (emailVerified && user.email) {
     const [matchingStaff] = await db
       .select({ id: staff.id })
       .from(staff)
@@ -111,7 +111,14 @@ async function linkStaffAccount(user: {
     .from(staff)
     .where(isNotNull(staff.authUserId))
     .limit(1);
-  if (!anyLinkedStaff && user.email) {
+  const bootstrapAdminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
+  if (
+    !anyLinkedStaff &&
+    emailVerified &&
+    user.email &&
+    bootstrapAdminEmail &&
+    user.email.toLowerCase() === bootstrapAdminEmail
+  ) {
     await db.insert(staff).values({
       id: `staff-auth-${user.id}`,
       authUserId: user.id,
@@ -132,7 +139,7 @@ async function createAuthSession(
   tokens: oidc.TokenEndpointResponse & oidc.TokenEndpointResponseHelpers,
 ) {
   const dbUser = await upsertUser(claims);
-  await linkStaffAccount(dbUser);
+  await linkStaffAccount(dbUser, claims.email_verified === true);
   const now = Math.floor(Date.now() / 1000);
   const sessionData: SessionData = {
     user: {
@@ -141,6 +148,8 @@ async function createAuthSession(
       firstName: dbUser.firstName,
       lastName: dbUser.lastName,
       profileImageUrl: dbUser.profileImageUrl,
+      role: null,
+      branchId: null,
     },
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token,
@@ -153,10 +162,41 @@ async function createAuthSession(
   return createSession(sessionData);
 }
 
-router.get("/auth/user", (req: Request, res: Response) => {
-  res.json(GetCurrentAuthUserResponse.parse({
-    user: req.isAuthenticated() ? req.user : null,
-  }));
+router.get("/auth/user", (req: Request, res: Response, next) => {
+  const sendUser = async () => {
+    if (!req.isAuthenticated()) {
+      res.json(GetCurrentAuthUserResponse.parse({ user: null }));
+      return;
+    }
+    let [staffRecord] = await db
+      .select({ role: staff.role, branchId: staff.branchId, status: staff.status })
+      .from(staff)
+      .where(eq(staff.authUserId, req.user.id))
+      .limit(1);
+    if (!staffRecord && req.user.email) {
+      [staffRecord] = await db
+        .select({ role: staff.role, branchId: staff.branchId, status: staff.status })
+        .from(staff)
+        .where(eq(staff.email, req.user.email))
+        .limit(1);
+    }
+    const branchId = staffRecord?.status === "suspended" ? null : staffRecord?.branchId ?? null;
+    const role = staffRecord?.status === "suspended" ? null : staffRecord?.role ?? null;
+    const missingRequiredBranch = (role === "coordinator" || role === "support") && !branchId;
+    let assignedBranchInactive = false;
+    if ((role === "coordinator" || role === "support") && branchId) {
+      const [branch] = await db.select({ active: branches.active }).from(branches).where(eq(branches.id, branchId)).limit(1);
+      assignedBranchInactive = !branch?.active;
+    }
+    res.json(GetCurrentAuthUserResponse.parse({
+      user: {
+        ...req.user,
+        role: missingRequiredBranch || assignedBranchInactive ? null : role,
+        branchId,
+      },
+    }));
+  };
+  void sendUser().catch(next);
 });
 
 router.get("/login", async (req: Request, res: Response) => {

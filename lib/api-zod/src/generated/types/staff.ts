@@ -21,4 +21,5 @@ export interface Staff {
   joinedAt: Date;
   /** @nullable */
   lastActiveAt: Date | null;
+  inviteUrl?: string;
 }
