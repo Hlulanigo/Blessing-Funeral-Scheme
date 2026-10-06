@@ -5,7 +5,7 @@ import {
   LogoutMobileSessionResponse,
 } from "@workspace/api-zod";
 import { db, staff, usersTable } from "@workspace/db";
-import { and, eq, isNull, isNotNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import * as oidc from "openid-client";
 import {
@@ -85,13 +85,13 @@ async function linkStaffAccount(user: {
     const [matchingStaff] = await db
       .select({ id: staff.id })
       .from(staff)
-      .where(and(eq(staff.email, user.email), isNull(staff.authUserId)))
+      .where(and(sql`lower(${staff.email}) = ${user.email.toLowerCase()}`, isNull(staff.authUserId), eq(staff.status, "invited")))
       .limit(1);
     if (matchingStaff) {
       await db
         .update(staff)
         .set({ authUserId: user.id, status: "active", lastActiveAt: new Date(), updatedAt: new Date() })
-        .where(eq(staff.id, matchingStaff.id));
+        .where(and(eq(staff.id, matchingStaff.id), isNull(staff.authUserId), eq(staff.status, "invited")));
       return;
     }
   }
@@ -106,25 +106,6 @@ async function linkStaffAccount(user: {
     return;
   }
 
-  const [anyLinkedStaff] = await db
-    .select({ id: staff.id })
-    .from(staff)
-    .where(isNotNull(staff.authUserId))
-    .limit(1);
-  if (!anyLinkedStaff && user.email) {
-    await db.insert(staff).values({
-      id: `staff-auth-${user.id}`,
-      authUserId: user.id,
-      name: [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email,
-      email: user.email,
-      phone: "Not provided",
-      role: "administrator",
-      branchId: null,
-      status: "active",
-      joinedAt: new Date(),
-      lastActiveAt: new Date(),
-    });
-  }
 }
 
 async function createAuthSession(

@@ -168,6 +168,23 @@ paths:
                 items:
                   $ref: "#/components/schemas/Activity"
   /branches:
+    post:
+      operationId: createBranch
+      tags: [branches]
+      summary: Add a branch (administrators only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchInput"
+      responses:
+        "201":
+          description: Branch created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
     get:
       operationId: listBranches
       tags: [branches]
@@ -181,6 +198,18 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Branch"
+  /workspace/access:
+    get:
+      operationId: getWorkspaceAccess
+      tags: [staff]
+      summary: Get the signed-in user's assigned staff access
+      responses:
+        "200":
+          description: Current staff assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceAccess"
   /staff:
     get:
       operationId: listStaff
@@ -589,9 +618,24 @@ components:
         memberCount: { type: integer }
         collectionRate: { type: integer }
       required: [id, name, location, memberCount, collectionRate]
+    BranchInput:
+      type: object
+      required: [name, location]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        location: { type: string, minLength: 1, maxLength: 200 }
     StaffRole:
       type: string
       enum: [administrator, manager, coordinator, support]
+    WorkspaceAccess:
+      type: object
+      required: [id, role, status]
+      properties:
+        id: { type: string }
+        role:
+          $ref: "#/components/schemas/StaffRole"
+        status:
+          $ref: "#/components/schemas/StaffStatus"
     StaffStatus:
       type: string
       enum: [active, invited, suspended]

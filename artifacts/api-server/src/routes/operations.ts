@@ -6,6 +6,9 @@ import {
   CreateBeneficiaryBody,
   CreateBeneficiaryParams,
   CreateBeneficiaryResponse,
+  CreateBranchBody,
+  CreateBranchResponse,
+  GetWorkspaceAccessResponse,
   CreateClaimBody,
   CreateClaimResponse,
   CreateMemberBody,
@@ -227,6 +230,35 @@ async function recordActivity(title: string, detail: string, type: string) {
 }
 
 router.use("/staff", requireAdministrator);
+
+router.use((req, res, next) => {
+  const canWrite = req.staff?.role === "administrator" ||
+    (req.method === "POST" && req.path === "/members") ||
+    (req.method === "PATCH" && /^\/members\/[^/]+$/.test(req.path));
+  if (!["GET", "HEAD", "OPTIONS"].includes(req.method) && !canWrite) {
+    res.status(403).json({ error: "Administrator access required" });
+    return;
+  }
+  next();
+});
+
+router.get("/workspace/access", (req, res) => {
+  res.json(GetWorkspaceAccessResponse.parse(req.staff));
+});
+
+router.post("/branches", requireAdministrator, async (req, res) => {
+  const body = CreateBranchBody.parse(req.body);
+  const name = body.name.trim();
+  const location = body.location.trim();
+  if (!name || !location) {
+    res.status(400).json({ error: "Branch name and location are required" });
+    return;
+  }
+  const branch = { id: `branch-${randomUUID()}`, name, location };
+  await db.insert(branches).values(branch);
+  await recordActivity("Branch added", `${name} · ${location}`, "branch");
+  res.status(201).json(CreateBranchResponse.parse({ ...branch, memberCount: 0, collectionRate: 100 }));
+});
 
 router.get("/dashboard/summary", async (_req, res) => {
   const [memberRows, contributionRows, claimRows, branchesView] = await Promise.all([
@@ -450,7 +482,7 @@ router.post("/members", async (req, res) => {
       idNumber: body.idNumber,
       branchId: branch.id,
       planId: plan.id,
-      status: "active",
+      status: "pending",
       joinedAt,
       nextContributionDate,
     });
@@ -479,6 +511,11 @@ router.get("/members/:memberId", async (req, res) => {
 });
 
 router.patch("/members/:memberId", async (req, res) => {
+  if (req.staff?.role !== "administrator" &&
+      (req.body?.status !== "active" || Object.keys(req.body ?? {}).some((key) => key !== "status"))) {
+    res.status(403).json({ error: "Staff can only approve pending members" });
+    return;
+  }
   const params = UpdateMemberParams.parse(req.params);
   const body = UpdateMemberBody.parse(req.body);
   const [existing] = await db.select().from(members).where(eq(members.id, params.memberId)).limit(1);
@@ -487,6 +524,10 @@ router.patch("/members/:memberId", async (req, res) => {
     return;
   }
   const patch: Partial<typeof members.$inferInsert> = { updatedAt: new Date() };
+  if (req.staff?.role !== "administrator" && existing.status !== "pending") {
+    res.status(409).json({ error: "Only pending members can be approved" });
+    return;
+  }
   if (body.name !== undefined) patch.name = body.name;
   if (body.phone !== undefined) patch.phone = body.phone;
   if (body.email !== undefined) patch.email = body.email;

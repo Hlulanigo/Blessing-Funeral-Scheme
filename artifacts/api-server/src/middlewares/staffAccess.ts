@@ -22,34 +22,18 @@ export async function requireStaff(req: Request, res: Response, next: NextFuncti
     return;
   }
 
-  let [linked] = await db
+  const [linked] = await db
     .select({ id: staff.id, role: staff.role, status: staff.status })
     .from(staff)
     .where(eq(staff.authUserId, req.user.id))
     .limit(1);
 
-  if (!linked && req.user.email) {
-    [linked] = await db
-      .select({ id: staff.id, role: staff.role, status: staff.status })
-      .from(staff)
-      .where(eq(staff.email, req.user.email))
-      .limit(1);
-    if (linked && !linked.status.includes("suspended")) {
-      await db.update(staff).set({
-        authUserId: req.user.id,
-        status: "active",
-        lastActiveAt: new Date(),
-        updatedAt: new Date(),
-      }).where(eq(staff.id, linked.id));
-    }
-  }
-
   if (!linked) {
     res.status(403).json({ error: "Your account is not assigned to this workspace" });
     return;
   }
-  if (linked.status === "suspended") {
-    res.status(403).json({ error: "Your staff access is suspended" });
+  if (linked.status !== "active" || !["administrator", "manager", "coordinator", "support"].includes(linked.role)) {
+    res.status(403).json({ error: "Your staff access is not active" });
     return;
   }
 
