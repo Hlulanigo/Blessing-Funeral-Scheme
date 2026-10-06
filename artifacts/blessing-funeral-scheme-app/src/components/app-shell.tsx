@@ -2,6 +2,7 @@ import { Bell, BookOpen, Building2, ChevronDown, CircleDollarSign, FileText, Lay
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import type { AuthUser } from '@workspace/replit-auth-web';
+import { getListActivityQueryKey, useListActivity } from '@workspace/api-client-react';
 import { BrandMark } from '@/components/brand-mark';
 
 const navItems = [
@@ -17,6 +18,8 @@ export function AppShell({ children, user, logout }: { children: ReactNode; user
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const activityQuery = useListActivity({ query: { queryKey: getListActivityQueryKey() } });
+  const activities = activityQuery.data ?? [];
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'Workspace user';
   const initials = [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join('').toUpperCase() || displayName.slice(0, 2).toUpperCase();
   const profileLabel = user?.email ? 'Authenticated workspace user' : 'Workspace administrator';
@@ -59,7 +62,55 @@ export function AppShell({ children, user, logout }: { children: ReactNode; user
             <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground"><BookOpen size={14} /> Blessing Funeral Scheme <span className="text-border">/</span> <span className="text-foreground font-semibold">{location === '/' ? 'Operations' : location.slice(1).split('/')[0]}</span></div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="relative"><button data-testid="button-notifications" className="btn btn-ghost p-2 relative" aria-label="Notifications" onClick={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }}><Bell size={17} /><span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[hsl(var(--accent))] rounded-full" /></button>{notificationsOpen && <div className="absolute right-0 top-11 w-64 card p-4 z-30"><div className="flex items-center justify-between"><div className="font-bold text-sm">Notifications</div><span className="badge badge-pending">2 new</span></div><div className="text-xs text-muted-foreground leading-relaxed mt-3">Two member records need a contribution follow-up before Friday.</div><Link href="/contributions" data-testid="link-notification-contributions" className="btn btn-secondary mt-3 w-full" onClick={() => setNotificationsOpen(false)}>Review ledger</Link></div>}</div>
+             <div className="relative">
+               <button
+                 data-testid="button-notifications"
+                 className="btn btn-ghost p-2 relative"
+                 aria-label="Recent activity"
+                 onClick={() => {
+                   setNotificationsOpen((value) => !value);
+                   setProfileOpen(false);
+                 }}
+               >
+                 <Bell size={17} />
+                 {activities.length > 0 && (
+                   <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[hsl(var(--accent))] rounded-full" />
+                 )}
+               </button>
+               {notificationsOpen && (
+                 <div className="absolute right-0 top-11 w-72 card p-4 z-30">
+                   <div className="flex items-center justify-between">
+                     <div className="font-bold text-sm">Recent activity</div>
+                     {activities.length > 0 && <span className="badge badge-pending">{activities.length}</span>}
+                   </div>
+                   {activityQuery.isLoading ? (
+                     <div className="text-xs text-muted-foreground mt-3">Loading activity…</div>
+                   ) : activities.length === 0 ? (
+                     <div className="text-xs text-muted-foreground leading-relaxed mt-3">
+                       No activity has been recorded yet.
+                     </div>
+                   ) : (
+                     <div className="space-y-3 mt-3">
+                       {activities.slice(0, 3).map((activity) => (
+                         <div key={activity.id}>
+                           <div className="text-xs font-semibold">{activity.title}</div>
+                           <div className="text-[11px] text-muted-foreground mt-1">{activity.detail}</div>
+                           <div className="text-[10px] text-muted-foreground mt-1">{activity.time}</div>
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                   <Link
+                     href="/"
+                     data-testid="link-notification-activity"
+                     className="btn btn-secondary mt-3 w-full"
+                     onClick={() => setNotificationsOpen(false)}
+                   >
+                     View dashboard
+                   </Link>
+                 </div>
+               )}
+             </div>
             <div className="h-7 w-px bg-border hidden sm:block" />
             <div className="relative"><button data-testid="button-profile-menu" className="flex items-center gap-2 text-left" onClick={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }}>
                {user?.profileImageUrl ? <img className="avatar avatar-image" src={user.profileImageUrl} alt="" /> : <div className="avatar">{initials}</div>}<div className="hidden sm:block"><div className="text-xs font-bold">{displayName}</div><div className="text-[10px] text-muted-foreground">{profileLabel}</div></div><ChevronDown size={14} className="text-muted-foreground" />
